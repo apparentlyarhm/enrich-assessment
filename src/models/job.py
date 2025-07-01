@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, ConfigDict
 class JobStatus(str, Enum):
     PENDING = "pending"
     PROCESSING = "processing"
-    COMPLETE = "complete"
+    COMPLETED = "completed"
     FAILED = "failed"
 
 class Job(BaseModel):
