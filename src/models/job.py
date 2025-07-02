@@ -4,6 +4,10 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
+class VendorType(str, Enum):
+    SYNC = "sync"
+    ASYNC = "async"
+
 class JobStatus(str, Enum):
     PENDING = "pending"
     PROCESSING = "processing"
@@ -13,6 +17,11 @@ class JobStatus(str, Enum):
 class Job(BaseModel):
     request_id: uuid.UUID = Field(default_factory=uuid.uuid4, alias="_id")
     status: JobStatus = JobStatus.PENDING
+
+    # Assuming vendor is a string identifier for the vendor
+    vendor: str
+    vendor_type: VendorType
+
     payload: Dict[str, Any]
     result: Optional[Dict[str, Any]] = None
 
@@ -24,6 +33,11 @@ class Job(BaseModel):
 class JobCreationResponse(BaseModel):
     request_id: uuid.UUID
 
+class JobCreationRequest(BaseModel):
+    vendor: str
+    vendor_type: VendorType
+    request_id: uuid.UUID
+    
 class JobStatusResponse(BaseModel):
     status: str # e.g., "complete" or "processing"
     result: Optional[Dict[str, Any]] = None

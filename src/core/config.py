@@ -12,10 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
+    # mongoDB stuff
     MONGO_URI: str
     MONGO_DB_NAME: str 
     MONGO_COLLECTION_NAME: str
 
+    # RabbitMQ stuff
     RABBITMQ_URL: str
     RABBITMQ_QUEUE_NAME: str 
 

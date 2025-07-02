@@ -1,5 +1,7 @@
 import uuid
+import aio_pika
 import logging
+import json
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,8 +9,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
 
 from src.core.config import settings
-from src.core.dependencies import get_db
-from src.models.job import Job, JobCreationResponse, JobStatus, JobStatusResponse
+from src.core.dependencies import get_db, get_rabbitmq_channel
+from src.models.job import Job, JobCreationResponse, JobStatus, JobStatusResponse, JobCreationRequest
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -16,8 +18,9 @@ logger = logging.getLogger(__name__)
 
 @router.post("", response_model=JobCreationResponse, status_code=status.HTTP_202_ACCEPTED)
 async def create_job(
-    payload: Dict[str, Any],
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    job_request: JobCreationRequest,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    channel: aio_pika.Channel = Depends(get_rabbitmq_channel)
 ):
     """
     Accepts a job request.
@@ -25,13 +28,27 @@ async def create_job(
     - Creates a new job with a unique ID and "pending" status.
     - Responds instantly with the request_id.
     """
-    new_job = Job(payload=payload)
+    new_job = Job(
+        vendor=job_request.vendor,
+        vendor_type=job_request.vendor_type,
+        payload=job_request.payload
+    )
     job_to_insert = new_job.model_dump(by_alias=True)
 
     # Insert the new job into the collection
     await db[settings.MONGO_COLLECTION_NAME].insert_one(job_to_insert)
-    logger.info(f"Job created and inserted into DB: {new_job.request_id}")
 
+    message_body = json.dumps({"request_id": str(new_job.request_id)})
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=message_body.encode(),
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+        ),
+        routing_key=settings.RABBITMQ_QUEUE_NAME
+    )
+    
+    logger.info(f"Job created in DB and enqueued: {new_job.request_id}")
     return JobCreationResponse(request_id=new_job.request_id)
 
 

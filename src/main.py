@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
         settings.log()          
         app.state.db_client = AsyncIOMotorClient(settings.MONGO_URI)
         
-        # Is this a correct way to do this?
+        # Is there a better way to check if the connection is successful?
         await app.state.db_client.admin.command('ping')      
         app.state.db = app.state.db_client[settings.MONGO_DB_NAME]
         logger.info("Successfully connected to MongoDB.")
