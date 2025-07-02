@@ -64,7 +64,7 @@ async def get_job_status(
     else:
         return JobStatusResponse(status="processing")
 
-@router.get("", response_model=List[JobStatusResponse])
+@router.get("", response_model=List[Job])
 async def get_all_jobs(
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
@@ -78,6 +78,16 @@ async def get_all_jobs(
 
     async for job_data in jobs_cursor:
         job = Job(**job_data)
-        jobs_list.append(JobStatusResponse(status=job.status, result=job.result))
+        jobs_list.append(job)
 
     return jobs_list
+
+@router.delete("", status_code=status.HTTP_200_OK)
+def delete(
+    db: AsyncIOMotorDatabase = Depends(get_db)
+): 
+    """
+    Deletes all jobs in the db. Just a testing endpoint
+    """
+    db[settings.MONGO_COLLECTION_NAME].delete_many({})
+    return None

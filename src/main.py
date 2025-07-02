@@ -7,6 +7,7 @@ from pymongo.errors import ConnectionFailure
 
 from src.api import jobs, webhooks
 from src.core.config import settings
+import aio_pika
 
 # Setup a logger for more structured output
 logging.basicConfig(level=logging.INFO)
@@ -30,15 +31,34 @@ async def lifespan(app: FastAPI):
         await app.state.db_client.admin.command('ping')      
         app.state.db = app.state.db_client[settings.MONGO_DB_NAME]
         logger.info("Successfully connected to MongoDB.")
+
+        rabbitmq_connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+        rabbitmq_channel = await rabbitmq_connection.channel()
         
-    except ConnectionFailure as e:
-        logger.critical(f"Could not connect to MongoDB: {e}")
+        # It's a good practice for the producer to declare the queue
+        # to ensure it exists before trying to send messages.
+        # durable=True means the queue will survive a RabbitMQ restart.
+        await rabbitmq_channel.declare_queue(
+            settings.RABBITMQ_QUEUE_NAME, 
+            durable=True
+        )
+        
+        app.state.rabbitmq_connection = rabbitmq_connection
+        app.state.rabbitmq_channel = rabbitmq_channel
+        logger.info("Successfully connected to RabbitMQ.")
+        
+    except (ConnectionFailure, aio_pika.exceptions.AMQPConnectionError) as e:
+        logger.critical(f"Could not connect to required services: {e}")
         raise # re-raise
         
     yield # The application runs here
     
     # --- Shutdown ---
     logger.info("Application shutdown...")
+    if hasattr(app.state, 'rabbitmq_connection'):
+        await app.state.rabbitmq_connection.close()
+        logger.info("RabbitMQ connection closed.")
+
     if hasattr(app.state, 'db_client'):
         app.state.db_client.close()
         logger.info("MongoDB connection closed.")

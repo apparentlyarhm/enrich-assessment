@@ -6,7 +6,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-from urllib.parse import urlparse, urlunparse
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -16,6 +15,9 @@ class Settings(BaseSettings):
     MONGO_URI: str
     MONGO_DB_NAME: str 
     MONGO_COLLECTION_NAME: str
+
+    RABBITMQ_URL: str
+    RABBITMQ_QUEUE_NAME: str 
 
     # Pydantic settings config
     model_config = SettingsConfigDict(
@@ -31,6 +33,8 @@ class Settings(BaseSettings):
         logger.info(f"MONGO_URI: <redacted> (Length: {len(self.MONGO_URI)})")
         logger.info(f"MONGO_DB_NAME: {self.MONGO_DB_NAME}")
         logger.info(f"MONGO_COLLECTION_NAME: {self.MONGO_COLLECTION_NAME}")
+        logger.info(f"RABBITMQ_URL: <redacted> (Length: {len(self.RABBITMQ_URL)})")
+        logger.info(f"RABBITMQ_QUEUE_NAME: {self.RABBITMQ_QUEUE_NAME}")
         logger.info("-----------------------------------")
 
 
@@ -40,6 +44,7 @@ try:
 except Exception as e:
     # This provides the primary safety net. If a required env var is missing,
     # Pydantic will raise a validation error and the app won't start.
+    # If we used spring boot here, these things sort of come out of the box.
     logger.critical(f"Failed to load settings. Missing environment variables?")
     # Re-raising is crucial to stop the application from starting in a broken state.
     raise
