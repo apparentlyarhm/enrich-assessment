@@ -11,7 +11,7 @@ class VendorType(str, Enum):
 class JobStatus(str, Enum):
     PENDING = "pending"
     PROCESSING = "processing"
-    COMPLETED = "completed"
+    COMPLETE = "complete"
     FAILED = "failed"
 
 class Job(BaseModel):
@@ -36,7 +36,7 @@ class JobCreationResponse(BaseModel):
 class JobCreationRequest(BaseModel):
     vendor: str
     vendor_type: VendorType
-    request_id: uuid.UUID
+    payload: Dict[str, Any]
     
 class JobStatusResponse(BaseModel):
     status: str # e.g., "complete" or "processing"

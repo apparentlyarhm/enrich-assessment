@@ -12,13 +12,13 @@ router = APIRouter(prefix="/vendor-webhook", tags=["Webhooks"])
 JOBS_COLLECTION = "jobs"
 
 
-@router.post("/{vendor}")
+@router.post("/{vendor_id}", status_code=status.HTTP_200_OK)
 async def vendor_webhook(
-    vendor: str,
+    vendor_id: str,
     payload: Dict[str, Any] = Body(...),
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
-    print(f"Received webhook from {vendor} with payload: {payload}")
+    print(f"Received webhook from {vendor_id} with payload: {payload}")
 
     request_id_str = payload.get("request_id")
     if not request_id_str:

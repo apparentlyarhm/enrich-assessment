@@ -38,8 +38,8 @@ async def create_job(
     # Insert the new job into the collection
     await db[settings.MONGO_COLLECTION_NAME].insert_one(job_to_insert)
 
-    message_body = json.dumps({"request_id": str(new_job.request_id)})
-
+    message_body = new_job.model_dump_json(by_alias=True)
+    
     await channel.default_exchange.publish(
         aio_pika.Message(
             body=message_body.encode(),
