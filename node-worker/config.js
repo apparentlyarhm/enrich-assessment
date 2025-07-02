@@ -7,7 +7,6 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
-// Centralized configuration object
 export const config = {
   mongo: {
     uri: process.env.MONGO_URI,

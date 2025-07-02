@@ -15,7 +15,7 @@ export async function callSyncVendor(payload) {
 
   return {
     source: "sync_vendor_a",
-    raw_data: `  Processed: ${payload.data}  `,
+    raw_data: `Processed: ${payload}`,
     personal_id: "ssn_123-45-6789", // PII to be removed
   };
 }
@@ -31,7 +31,6 @@ export async function callAsyncVendor(jobData) {
     `Vendor acknowledged job ${jobData._id}. The worker is now free.`
   );
 
-  // --- The Vendor's "Background" Process ---
   // we'll simulate the vendor taking 10 seconds to do its work- this will happen on the vendor's side.
   await sleep(10000); // some logic is taking 10s
 
@@ -39,9 +38,9 @@ export async function callAsyncVendor(jobData) {
   const finalData = {
     request_id: jobData._id.toString(), // The vendor must send our ID back
     data: {
-      final_output: `Webhook result for payload: ${jobData.payload.data}`,
+      final_output: `Webhook result for payload`,
       vendor_metadata: "some-info-from-vendor",
-    },
+    }, // We can essentially serialise anything; really depends on the vendor.
   };
 
   // The vendor makes a POST request to our FastAPI webhook endpoint.
