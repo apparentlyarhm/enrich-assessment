@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo_service
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    container_name: rabbitmq_service
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api_service
+    ports:
+      - "1234:1234"
+    environment:
+      - MONGO_URI=mongodb://root:example@mongo:27017?uuidRepresentation=standard
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
+
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+      - MONGO_COLLECTION_NAME=${MONGO_COLLECTION_NAME}
+      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./node-worker
+    container_name: node_worker_service
+    environment:
+      # --- Have to override from the env because outside of the docker network, its not really localhost ---
+      - MONGO_URI=mongodb://root:example@mongo:27017 # Adding representation for uuid seems to break this app
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
+
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+      - MONGO_COLLECTION_NAME=${MONGO_COLLECTION_NAME}
+      - RABBITMQ_QUEUE_NAME=${RABBITMQ_QUEUE_NAME}
+      - API_HOST=http://api_service:1234 # This is the internal Docker network address
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
