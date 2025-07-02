@@ -9,7 +9,7 @@ This repo contains two main applications:
 
 The `src` directory contains the Python code and its own virtual environment. The Node.js app is located in the `node-worker` directory and also uses its own environment.
 
-## Getting Started
+## Getting Started- not using `compose.yaml`
 
 1. **Clone the repository:**
 
@@ -23,11 +23,19 @@ The `src` directory contains the Python code and its own virtual environment. Th
    - Copy `.env.example` to `.env` in both `src` and `node-worker` directories.
    - Fill in the required values (MongoDB URI, RabbitMQ connection, etc.).
 
-3. **Start RabbitMQ (Docker):**
+3a. **Start RabbitMQ (Docker):**
 
-   ```bash
-   docker run -d --hostname rabbitmq --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-   ```
+```bash
+docker run -d --hostname rabbitmq --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
+
+3b. **Start MongoDB (Docker):**
+
+```bash
+docker run -d --name mongo_db -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=example -v mongo_local_data:/data/db mongo:latest
+```
+
+The above 2 steps are intentionally kept straigtforward
 
 4. **Install dependencies:**
 
@@ -56,13 +64,24 @@ The `src` directory contains the Python code and its own virtual environment. Th
      npm start
      ```
 
+## Start the stack- using compose
+
+Lucky if you are on windows. There is a handy `build.ps1` file that sets up the env for you. so just run it:
+
+```bash
+.\build.ps1
+```
+
+This assumes that a valid .env is created.
+
 ## Notes
 
 - Ensure you have Python 3.8+ and Node.js 14+ installed.
-- MongoDB is expected to be available via the Atlas connection string you provide, but IPs might have to be added (Might make it public temporarily, lets see)
-- RabbitMQ runs locally via Docker.
+- Docker should be installed
+- We do not create users and access roles in both RMQ and Mongo for the sake of convenience.
+- URIs are hardcoded in the compose because we are not deploying on cloud. If done that, then the URIs will be populated by something like terraform and used in CI/CD pipelines
 
 ---
 
 **Disclaimer:**  
-Deployment to production is still in progress. However, the main functionality works offline if set up correctly as described above.
+Load test is WIP
