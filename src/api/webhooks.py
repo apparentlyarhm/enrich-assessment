@@ -20,6 +20,8 @@ async def vendor_webhook(
 ):
     print(f"Received webhook from {vendor_id} with payload: {payload}")
 
+    # We can optionally validate the vendor_id as well but since we dont store any vendor information in the DB, we will not do that here.
+
     request_id_str = payload.get("request_id")
     if not request_id_str:
         raise HTTPException(
