@@ -37,18 +37,16 @@ Get-Content .env | ForEach-Object {
     }
 }
 
+# URIs for both MongoDB and RabbitMQ are hardcoded in the compose file. 
+
 $MONGO_DB_NAME = $env:MONGO_DB_NAME
 $MONGO_COLLECTION_NAME = $env:MONGO_COLLECTION_NAME
-$MONGO_URI = $env:MONGO_URI
 $RABBITMQ_QUEUE_NAME=$env:RABBITMQ_QUEUE_NAME
-$RABBITMQ_URL=$env:RABBITMQ_URL
 
 Check-EmptyVars @(
     "MONGO_DB_NAME"
     "MONGO_COLLECTION_NAME"
-    "MONGO_URI"
     "RABBITMQ_QUEUE_NAME"
-    "RABBITMQ_URL"
 )
 
 
@@ -57,7 +55,5 @@ Write-Host "Starting docker-compose build and up..."
 $env:MONGO_DB_NAME = $MONGO_DB_NAME
 $env:MONGO_COLLECTION_NAME = $MONGO_COLLECTION_NAME
 $env:RABBITMQ_QUEUE_NAME = $RABBITMQ_QUEUE_NAME
-$env:RABBITMQ_URL = $RABBITMQ_URL
-$env:MONGO_URI = $MONGO_URI
 
 docker-compose up --build
