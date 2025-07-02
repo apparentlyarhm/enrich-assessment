@@ -1,9 +1,22 @@
 # self explanatory
 .venv/
 .idea/
+.vscode/
 
 # enviroment
 .env
 
 __pycache__/
 *.pyc
+
+
+# worker is a node app so,
+dist/
+build/
+
+node_modules/
+package-lock.json
+
+logs/
+*.log
+npm-debug.log*
