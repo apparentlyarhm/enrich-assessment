@@ -1,8 +1,7 @@
 import uuid
 import aio_pika
 import logging
-import json
-from typing import Any, Dict
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -39,7 +38,6 @@ async def create_job(
     await db[settings.MONGO_COLLECTION_NAME].insert_one(job_to_insert)
 
     message_body = new_job.model_dump_json(by_alias=True)
-    
     await channel.default_exchange.publish(
         aio_pika.Message(
             body=message_body.encode(),
@@ -52,52 +50,40 @@ async def create_job(
     return JobCreationResponse(request_id=new_job.request_id)
 
 
-@router.get("/{request_id}", response_model=JobStatusResponse)
+@router.get("", response_model=Union[JobStatusResponse, List[Job]])
 async def get_job_status(
-    request_id: uuid.UUID,
+    request_id: Optional[uuid.UUID] = None,
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """
     Looks up a job by its request_id.
+    - If request_id is not provided, returns a list of all jobs.
     - If the job is complete, it returns the status and the result.
     - If the job is not complete (pending, processing, etc.), it returns a "processing" status.
     - If the job is not found, it returns a 404 error.
     """
-   # Find the job by its _id (which is our request_id)
-    job_data = await db[settings.MONGO_COLLECTION_NAME].find_one({"_id": request_id})
-    print(job_data)
+    collection = db[settings.MONGO_COLLECTION_NAME]
 
-    if not job_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found."
-        )
-
-    # Convert the dictionary from MongoDB into our Pydantic Job model
-    job = Job(**job_data)
-
-    if job.status == JobStatus.COMPLETE:
-        return JobStatusResponse(status="complete", result=job.result)
-    else:
-        return JobStatusResponse(status="processing")
-
-@router.get("", response_model=List[Job])
-async def get_all_jobs(
-    db: AsyncIOMotorDatabase = Depends(get_db)
-):
-    """
-    Retrieves all jobs in the database.
-    - Returns a list of job statuses.
-    This is only for testing
-    """
-    jobs_cursor = db[settings.MONGO_COLLECTION_NAME].find({})
-    jobs_list = []
-
-    async for job_data in jobs_cursor:
+    if request_id:
+        job_data = await collection.find_one({"_id": request_id})
+        if not job_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found."
+            )
         job = Job(**job_data)
-        jobs_list.append(job)
+        if job.status == JobStatus.COMPLETE:
+            return JobStatusResponse(status="complete", result=job.result)
+        else:
+            return JobStatusResponse(status="processing")
+    else:
+        jobs_cursor = collection.find({})
+        jobs_list = []
 
-    return jobs_list
+        async for job_data in jobs_cursor:
+            jobs_list.append(Job(**job_data))
+
+        return jobs_list
 
 @router.delete("", status_code=status.HTTP_200_OK)
 def delete(
