@@ -24,4 +24,6 @@ export const config = {
     sync_vendor_a: { rate_limit_seconds: 5 },
     async_vendor_b: { rate_limit_seconds: 2 },
   },
+
+  apiHost: process.env.API_HOST,
 };

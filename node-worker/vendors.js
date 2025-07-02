@@ -1,3 +1,5 @@
+import { config } from "./config.js";
+
 // Helper to simulate waiting
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -46,7 +48,7 @@ export async function callAsyncVendor(jobData) {
   // The vendor makes a POST request to our FastAPI webhook endpoint.
   // For this to work, your FastAPI app must be running.
   try {
-    const webhookUrl = `http://localhost:1234/vendor-webhook/${jobData.vendor}`;
+    const webhookUrl = `${config.apiHost}/vendor-webhook/${jobData.vendor}`;
 
     await fetch(webhookUrl, {
       method: "POST",
